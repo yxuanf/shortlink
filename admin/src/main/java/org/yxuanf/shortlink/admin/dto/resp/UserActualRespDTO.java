@@ -1,12 +1,9 @@
 package org.yxuanf.shortlink.admin.dto.resp;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
-import org.yxuanf.shortlink.admin.serialize.PhoneDesensitizationSerializer;
 
 @Data
-public class UserRespDTO {
-
+public class UserActualRespDTO {
     /**
      * id
      */
@@ -25,7 +22,6 @@ public class UserRespDTO {
     /**
      * 手机号
      */
-    @JsonSerialize(using = PhoneDesensitizationSerializer.class)
     private String phone;
 
     /**
