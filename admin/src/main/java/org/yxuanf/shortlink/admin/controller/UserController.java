@@ -6,7 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 import org.yxuanf.shortlink.admin.common.convention.result.Result;
 import org.yxuanf.shortlink.admin.common.convention.result.Results;
+import org.yxuanf.shortlink.admin.config.UserLoginRespDTO;
+import org.yxuanf.shortlink.admin.dto.req.UserLoginReqDTO;
 import org.yxuanf.shortlink.admin.dto.req.UserRegisterReqDTO;
+import org.yxuanf.shortlink.admin.dto.req.UserUpdateReqDTO;
 import org.yxuanf.shortlink.admin.dto.resp.UserActualRespDTO;
 import org.yxuanf.shortlink.admin.dto.resp.UserRespDTO;
 import org.yxuanf.shortlink.admin.service.UserService;
@@ -47,6 +50,36 @@ public class UserController {
     @PostMapping("/api/short-link/admin/v1/user")
     public Result<Void> register(@RequestBody UserRegisterReqDTO requestParam) {
         userService.register(requestParam);
+        return Results.success();
+    }
+
+    /**
+     * 用户信息更新
+     */
+    @PutMapping("/api/short-link/admin/v1/user")
+    public Result<Void> update(@RequestBody UserUpdateReqDTO requestParam) {
+        userService.update(requestParam);
+        return Results.success();
+    }
+
+    /**
+     * 用户登入
+     */
+    @PostMapping("/api/short-link/admin/v1/user/login")
+    public Result<UserLoginRespDTO> login(@RequestBody UserLoginReqDTO requestParam) {
+        UserLoginRespDTO result = userService.login(requestParam);
+        return Results.success(result);
+    }
+
+    @GetMapping("/api/short-link/admin/v1/user/check-login")
+    public Result<Boolean> checkLogin(@RequestParam("username") String username, @RequestParam("token") String token) {
+        Boolean result = userService.checkLogin(username, token);
+        return Results.success(result);
+    }
+
+    @DeleteMapping("/api/short-link/admin/v1/user/logout")
+    public Result<Void> logout(@RequestParam("username") String username, @RequestParam("token") String token) {
+        userService.logout(username, token);
         return Results.success();
     }
 }
