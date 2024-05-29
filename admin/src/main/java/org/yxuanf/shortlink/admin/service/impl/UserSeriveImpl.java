@@ -59,12 +59,18 @@ public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements U
         return result;
     }
 
+    /**
+     * 判断用户是否被注册
+     */
     @Override
     public Boolean hasUsername(String username) {
         // 存在返回true
         return userRegisterCachePenetrationBloomFilter.contains(username);
     }
 
+    /**
+     * 注册用户
+     */
     @Override
     public void register(UserRegisterReqDTO requestParam) {
         // 用户名存在，抛出异常
@@ -91,6 +97,9 @@ public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements U
         }
     }
 
+    /**
+     * 更新用户
+     */
     @Override
     public void update(UserUpdateReqDTO requestParam) {
         // TODO 验证当前用户名是否为登录用户，不一致返回错误
@@ -102,11 +111,16 @@ public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements U
     @Override
     public UserLoginRespDTO login(UserLoginReqDTO requestParam) {
         LambdaQueryWrapper<UserDO> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(UserDO::getUsername, requestParam.getUsername())
-                .eq(UserDO::getPassword, requestParam.getPassword())
-                .eq(UserDO::getDelFlag, 0);
-        UserDO userDO = baseMapper.selectOne(lqw);
-        if (userDO == null) {
+        UserDO userDO;
+        if (hasUsername(requestParam.getUsername())) {
+            lqw.eq(UserDO::getUsername, requestParam.getUsername())
+                    .eq(UserDO::getPassword, requestParam.getPassword())
+                    .eq(UserDO::getDelFlag, 0);
+            userDO = baseMapper.selectOne(lqw);
+            if (userDO == null) {
+                throw new ClientException("用户密码错误");
+            }
+        } else {
             throw new ClientException("用户不存在");
         }
         Boolean hasLogin = stringRedisTemplate.hasKey(USER_LOGIN_KEY + requestParam.getUsername());
@@ -115,7 +129,6 @@ public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements U
         }
         // 生成uuid作为用户唯一标识
         String uuid = UUID.randomUUID().toString();
-//        stringRedisTemplate.opsForValue().set(uuid, JSON.toJSONString(userDO), 30L, TimeUnit.MINUTES);
         stringRedisTemplate.opsForHash().put(USER_LOGIN_KEY + requestParam.getUsername(), uuid, JSON.toJSONString(userDO));
         // redis 设置30min有效期
         stringRedisTemplate.expire(USER_LOGIN_KEY + requestParam.getUsername(), 30L, TimeUnit.MINUTES);

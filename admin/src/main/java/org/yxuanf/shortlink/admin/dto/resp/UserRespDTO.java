@@ -4,6 +4,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import lombok.Data;
 import org.yxuanf.shortlink.admin.serialize.PhoneDesensitizationSerializer;
 
+/**
+ * 用户查询返回参数
+ */
 @Data
 public class UserRespDTO {
 

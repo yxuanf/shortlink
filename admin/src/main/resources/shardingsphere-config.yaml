@@ -10,6 +10,7 @@ dataSources:
 rules:
   - !SHARDING
     tables:
+      ## 逻辑表
       t_user:
         # 真实数据节点，比如数据库源以及数据库在数据库中真实存在的
         actualDataNodes: ds_0.t_user_${0..15}

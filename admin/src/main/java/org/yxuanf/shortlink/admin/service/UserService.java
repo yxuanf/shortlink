@@ -15,8 +15,8 @@ public interface UserService extends IService<UserDO> {
     /**
      * 根据用户名查询用户信息
      *
-     * @param username
-     * @return
+     * @param username 用户名
+     * @return 返回用户信息
      */
     UserRespDTO getUserByUsername(String username);
 
@@ -60,8 +60,9 @@ public interface UserService extends IService<UserDO> {
 
     /**
      * 用户登出
+     *
      * @param username 用户名
-     * @param token 用户Token
+     * @param token    用户Token
      */
     void logout(String username, String token);
 }
