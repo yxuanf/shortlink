@@ -16,7 +16,7 @@ import org.springframework.stereotype.Service;
 import org.yxuanf.shortlink.admin.common.convention.exception.ClientException;
 import org.yxuanf.shortlink.admin.common.convention.exception.ServiceException;
 import org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum;
-import org.yxuanf.shortlink.admin.config.UserLoginRespDTO;
+import org.yxuanf.shortlink.admin.dto.resp.UserLoginRespDTO;
 import org.yxuanf.shortlink.admin.dao.entity.UserDO;
 import org.yxuanf.shortlink.admin.dao.mapper.UserMapper;
 import org.yxuanf.shortlink.admin.dto.req.UserLoginReqDTO;
@@ -37,7 +37,7 @@ import static org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum.USER_SAV
  */
 @Service
 @RequiredArgsConstructor
-public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements UserService {
+public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements UserService {
 
     private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
     private final RedissonClient redissonClient;
@@ -129,9 +129,10 @@ public class UserSeriveImpl extends ServiceImpl<UserMapper, UserDO> implements U
         }
         // 生成uuid作为用户唯一标识
         String uuid = UUID.randomUUID().toString();
+        // 将用户登录凭证存放在redis
         stringRedisTemplate.opsForHash().put(USER_LOGIN_KEY + requestParam.getUsername(), uuid, JSON.toJSONString(userDO));
         // redis 设置30min有效期
-        stringRedisTemplate.expire(USER_LOGIN_KEY + requestParam.getUsername(), 30L, TimeUnit.MINUTES);
+        stringRedisTemplate.expire(USER_LOGIN_KEY + requestParam.getUsername(), 3600L, TimeUnit.MINUTES);
         return new UserLoginRespDTO(uuid);
     }
 

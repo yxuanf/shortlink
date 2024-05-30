@@ -1,7 +1,7 @@
 package org.yxuanf.shortlink.admin.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.yxuanf.shortlink.admin.config.UserLoginRespDTO;
+import org.yxuanf.shortlink.admin.dto.resp.UserLoginRespDTO;
 import org.yxuanf.shortlink.admin.dao.entity.UserDO;
 import org.yxuanf.shortlink.admin.dto.req.UserLoginReqDTO;
 import org.yxuanf.shortlink.admin.dto.req.UserRegisterReqDTO;

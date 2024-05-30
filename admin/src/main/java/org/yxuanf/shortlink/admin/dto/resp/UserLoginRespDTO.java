@@ -1,4 +1,4 @@
-package org.yxuanf.shortlink.admin.config;
+package org.yxuanf.shortlink.admin.dto.resp;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
