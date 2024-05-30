@@ -1,18 +1,19 @@
 package org.yxuanf.shortlink.admin.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import org.yxuanf.shortlink.admin.common.database.BaseDO;
 
 /**
  * 短链接分组实体
  */
+@EqualsAndHashCode(callSuper = true)
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @TableName("t_group")
-public class GroupDO {
+public class GroupDO extends BaseDO {
     /**
      * id
      */
@@ -36,5 +37,5 @@ public class GroupDO {
      * 分组排序
      */
     private Integer sortOrder;
-    
+
 }
