@@ -17,6 +17,7 @@ public class HashUtil {
 
     private static String convertDecToBase62(long num) {
         StringBuilder sb = new StringBuilder();
+        // 生成1-6位的短链接  62^5 < 2^31-1 < 62^6
         while (num > 0) {
             int i = (int) (num % SIZE);
             sb.append(CHARS[i]);
@@ -26,6 +27,8 @@ public class HashUtil {
     }
 
     public static String hashToBase62(String str) {
+        // i ~ [-2^31,2^31-1]
+        // 将原始链接通过hash32转换为10进制的hashcode
         int i = MurmurHash.hash32(str);
         long num = i < 0 ? Integer.MAX_VALUE - (long) i : i;
         return convertDecToBase62(num);
