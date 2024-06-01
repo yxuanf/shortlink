@@ -11,17 +11,19 @@ import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.beans.BeanUtils;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.yxuanf.shortlink.admin.common.biz.user.UserContext;
 import org.yxuanf.shortlink.admin.common.convention.exception.ClientException;
 import org.yxuanf.shortlink.admin.common.convention.exception.ServiceException;
 import org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum;
-import org.yxuanf.shortlink.admin.dto.resp.UserLoginRespDTO;
 import org.yxuanf.shortlink.admin.dao.entity.UserDO;
 import org.yxuanf.shortlink.admin.dao.mapper.UserMapper;
 import org.yxuanf.shortlink.admin.dto.req.UserLoginReqDTO;
 import org.yxuanf.shortlink.admin.dto.req.UserRegisterReqDTO;
 import org.yxuanf.shortlink.admin.dto.req.UserUpdateReqDTO;
+import org.yxuanf.shortlink.admin.dto.resp.UserLoginRespDTO;
 import org.yxuanf.shortlink.admin.dto.resp.UserRespDTO;
 import org.yxuanf.shortlink.admin.service.UserService;
 
@@ -29,8 +31,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.yxuanf.shortlink.admin.common.constant.RedisCacheConstant.LOCK_USER_REGISTER_KEY;
 import static org.yxuanf.shortlink.admin.common.constant.RedisCacheConstant.USER_LOGIN_KEY;
-import static org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum.USER_NAME_EXIST;
-import static org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum.USER_SAVE_ERROR;
+import static org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum.*;
 
 /**
  * 用户接口实现
@@ -42,6 +43,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
     private final RBloomFilter<String> userRegisterCachePenetrationBloomFilter;
     private final RedissonClient redissonClient;
     private final StringRedisTemplate stringRedisTemplate;
+    private final GroupServiceImpl groupService;
 
     /**
      * 根据用户名字返回用户信息
@@ -64,7 +66,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
      */
     @Override
     public Boolean hasUsername(String username) {
-        // 存在返回true
+        // 利用布隆过滤器，存在返回true
         return userRegisterCachePenetrationBloomFilter.contains(username);
     }
 
@@ -77,17 +79,24 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         if (hasUsername(requestParam.getUsername())) {
             throw new ClientException(USER_NAME_EXIST);
         }
-        int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
         // 通过分布式锁，防止短时间内同一用户名恶意请求注册
         RLock lock = redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());
         try {
             if (lock.tryLock()) {
-                // inserted < 1 新增用户失败
-                if (inserted < 1) {
-                    throw new ClientException(USER_SAVE_ERROR);
+                try {
+                    int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
+                    // inserted < 1 新增用户失败
+                    if (inserted < 1) {
+                        throw new ClientException(USER_SAVE_ERROR);
+                    }
+                    //
+                } catch (DuplicateKeyException ex) {
+                    throw new ClientException(USER_EXIST);
                 }
                 // 将用户名字添加到布隆过滤器中
                 userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
+                // 用户在注册时创建一个默认分组
+                groupService.saveGroup(requestParam.getUsername(), "默认分组");
                 return;
             }
             // 未获得锁直接抛出异常
@@ -95,6 +104,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         } finally {
             lock.unlock();
         }
+
     }
 
     /**
@@ -103,6 +113,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
     @Override
     public void update(UserUpdateReqDTO requestParam) {
         // TODO 验证当前用户名是否为登录用户，不一致返回错误
+        if (!UserContext.getUsername().equals(requestParam.getUsername())) {
+            throw new ClientException(USER_UPDATE_ERROR);
+        }
         LambdaUpdateWrapper<UserDO> luw = new LambdaUpdateWrapper<>();
         luw.eq(UserDO::getUsername, requestParam.getUsername());
         baseMapper.update(BeanUtil.toBean(requestParam, UserDO.class), luw);
