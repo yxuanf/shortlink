@@ -15,7 +15,9 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 public class GroupController {
+
     private final GroupService groupService;
+
 
     /**
      * 新增短链接分组
@@ -43,6 +45,9 @@ public class GroupController {
         return Results.success();
     }
 
+    /**
+     * 删除短链接
+     */
     @DeleteMapping("/api/short-link/admin/v1/group")
     public Result<Void> deleteGroup(@RequestParam("gid") String gid) {
         groupService.deleteGroup(gid);
