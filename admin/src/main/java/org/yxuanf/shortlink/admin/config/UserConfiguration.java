@@ -21,9 +21,9 @@ public class UserConfiguration {
         registration.setFilter(new UserTransmitFilter(stringRedisTemplate));
         registration.addUrlPatterns("/*");
         // 放行登录功能的URL
-        registration.addInitParameter("excludedUris","/api/short-link/admin/v1/user/login");
+//        registration.addInitParameter("excludedUris_login", "/api/short-link/admin/v1/user/login");
+//        registration.addInitParameter("excludedUris_has-username", "/api/short-link/v1/user/has-username");
         registration.setOrder(0);
-
         return registration;
     }
 }
