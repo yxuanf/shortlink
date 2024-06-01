@@ -14,9 +14,18 @@ import java.util.List;
 public interface GroupService extends IService<GroupDO> {
     /**
      * 短链接分组新增功能
-     * @param name 请求参数
+     *
+     * @param groupName 请求参数
      */
-    void saveGroup(String name);
+    void saveGroup(String groupName);
+
+    /**
+     * 短链接分组新增功能
+     *
+     * @param groupName 请求参数
+     * @param username  用户名
+     */
+    void saveGroup(String username, String groupName);
 
     /**
      * 查询短链接分组集合
@@ -25,12 +34,14 @@ public interface GroupService extends IService<GroupDO> {
 
     /**
      * 根据id,修改短链接分组名
+     *
      * @param requestParam 修改请求参数
      */
     void updateGroup(ShortLinkGroupUpdateReqDTO requestParam);
 
     /**
-     *  根据gid,删除短链接
+     * 根据gid,删除短链接
+     *
      * @param gid 软删除gid (deleteFlag = 1)
      */
     void deleteGroup(String gid);
