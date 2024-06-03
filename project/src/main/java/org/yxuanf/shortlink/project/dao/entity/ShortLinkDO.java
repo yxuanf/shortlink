@@ -16,6 +16,10 @@ import java.util.Date;
 public class ShortLinkDO extends BaseDO {
 
     /**
+     * id
+     */
+    private Long id;
+    /**
      * 域名
      */
     private String domain;
