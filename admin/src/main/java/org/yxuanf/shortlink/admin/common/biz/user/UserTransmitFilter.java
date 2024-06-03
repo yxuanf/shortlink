@@ -45,7 +45,9 @@ import static org.yxuanf.shortlink.admin.common.enums.UserErrorCodeEnum.USER_TOK
 @RequiredArgsConstructor
 public class UserTransmitFilter implements Filter {
     private final StringRedisTemplate stringRedisTemplate;
-    private final HashSet<String> hashSet = new HashSet<>(Set.of("/api/short-link/admin/v1/user/login", "/api/short-link/v1/user/has-username"));
+    private final HashSet<String> hashSet = new HashSet<>(Set.of("/api/short-link/admin/v1/user/login",
+            "/api/short-link/v1/user/has-username",
+            "/api/short-link/admin/v1/title"));
 
     @Override
     @SneakyThrows

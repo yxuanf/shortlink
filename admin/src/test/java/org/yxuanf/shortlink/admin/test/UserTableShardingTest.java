@@ -53,9 +53,17 @@ public class UserTableShardingTest {
             "    constraint idx_unique_username_gid\n" +
             "        unique (gid, username)\n" +
             ");\n";
+    private static final String SQL_GOTO_LINK = "create table t_link_goto_%d\n" +
+            "(\n" +
+            "    id             bigint auto_increment comment 'ID'\n" +
+            "        primary key,\n" +
+            "    gid            varchar(32) default 'default' null comment '分组标识',\n" +
+            "    full_short_url varchar(128)                  null comment '完整短链接'\n" +
+            ");";
+
     public static void main(String[] args) {
         for (int i = 0; i < 16; i++) {
-            System.out.printf((SQL_GROUP) + "%n", i);
+            System.out.printf((SQL_GOTO_LINK) + "%n", i);
         }
     }
 }
