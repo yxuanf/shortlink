@@ -21,11 +21,11 @@ import org.yxuanf.shortlink.admin.service.UserService;
 @RestController
 @RequiredArgsConstructor
 public class UserController {
+    private final UserService userService;
+
     /**
      * 根据用户名查询用户信息
      */
-    private final UserService userService;
-
     @GetMapping("/api/short-link/v1/user/{username}")
     public Result<UserRespDTO> getUserByUsername(@PathVariable("username") String username) {
         return Results.success(userService.getUserByUsername(username));
