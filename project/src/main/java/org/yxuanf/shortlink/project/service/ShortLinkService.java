@@ -2,13 +2,17 @@ package org.yxuanf.shortlink.project.service;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
 import org.yxuanf.shortlink.project.dao.entity.ShortLinkDO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkCreateReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkPageReqDTO;
+import org.yxuanf.shortlink.project.dto.req.ShortLinkUpdateReqDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkCreateRespDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkGroupCountRespDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkPageRespDTO;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface ShortLinkService extends IService<ShortLinkDO> {
@@ -35,4 +39,20 @@ public interface ShortLinkService extends IService<ShortLinkDO> {
      * @return 查询短链接分组内数量响应
      */
     List<ShortLinkGroupCountRespDTO> listGroupShortLinkCount(List<String> requestParam);
+
+    /**
+     * 修改短链接
+     *
+     * @param requestParam 修改短链接请求参数
+     */
+    void updateShortLink(ShortLinkUpdateReqDTO requestParam);
+
+    /**
+     * 短链接跳转
+     *
+     * @param shortUri 短链接后缀
+     * @param request  HTTP 请求
+     * @param response HTTP 响应
+     */
+    void restoreUrl(String shortUri, ServletRequest request, ServletResponse response) throws IOException;
 }
