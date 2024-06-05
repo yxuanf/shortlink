@@ -60,10 +60,12 @@ public class UserTableShardingTest {
             "    gid            varchar(32) default 'default' null comment '分组标识',\n" +
             "    full_short_url varchar(128)                  null comment '完整短链接'\n" +
             ");";
+    private static final String SQL_UPDATE_T_LINK = "alter table t_link_%d\n" +
+            "    modify del_time datetime null;";
 
     public static void main(String[] args) {
         for (int i = 0; i < 16; i++) {
-            System.out.printf((SQL_GOTO_LINK) + "%n", i);
+            System.out.printf((SQL_UPDATE_T_LINK) + "%n", i);
         }
     }
 }
