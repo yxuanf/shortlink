@@ -26,8 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.yxuanf.shortlink.admin.common.convention.result.Result;
 import org.yxuanf.shortlink.admin.common.convention.result.Results;
 import org.yxuanf.shortlink.admin.remote.ShortLinkRemoteService;
-import org.yxuanf.shortlink.admin.remote.dto.req.RecycleBinSaveReqDTO;
+import org.yxuanf.shortlink.admin.remote.dto.req.RecycleBinRecoverReqDTO;
+import org.yxuanf.shortlink.admin.remote.dto.req.RecycleBinRemoveReqDTO;
 import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkRecycleBinPageReqDTO;
+import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkRecycleBinSaveReqDTO;
 import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkPageRespDTO;
 import org.yxuanf.shortlink.admin.service.RecycleBinService;
 
@@ -45,7 +47,7 @@ public class RecycleBinController {
      * 保存回收站
      */
     @PostMapping("/api/short-link/admin/v1/recycle-bin/save")
-    public Result<Void> saveRecycleBin(@RequestBody RecycleBinSaveReqDTO requestParam) {
+    public Result<Void> saveRecycleBin(@RequestBody ShortLinkRecycleBinSaveReqDTO requestParam) {
         shortLinkRemoteService.saveRecycleBin(requestParam);
         return Results.success();
     }
@@ -56,5 +58,23 @@ public class RecycleBinController {
     @GetMapping("/api/short-link/admin/v1/recycle-bin/page")
     public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkRecycleBinPageReqDTO requestParam) {
         return recycleBinService.pageRecycleBinShortLink(requestParam);
+    }
+
+    /**
+     * 恢复短链接
+     */
+    @PostMapping("/api/short-link/admin/v1/recycle-bin/recover")
+    public Result<Void> recoverRecycleBin(@RequestBody RecycleBinRecoverReqDTO requestParam) {
+        shortLinkRemoteService.recoverRecycleBin(requestParam);
+        return Results.success();
+    }
+
+    /**
+     * 移除短链接
+     */
+    @PostMapping("/api/short-link/admin/v1/recycle-bin/remove")
+    public Result<Void> removeRecycleBin(@RequestBody RecycleBinRemoveReqDTO requestParam) {
+        shortLinkRemoteService.removeRecycleBin(requestParam);
+        return Results.success();
     }
 }
