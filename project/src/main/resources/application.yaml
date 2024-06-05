@@ -15,3 +15,7 @@ spring:
     view:
       prefix: /templates/
       suffix: .html
+shortLink:
+  stats:
+    locale:
+      mapKey: 724a57789605be42e4f808b641f9e87f
