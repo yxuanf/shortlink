@@ -18,6 +18,9 @@ import org.yxuanf.shortlink.project.dto.req.ShortLinkRecycleBinPageReqDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkPageRespDTO;
 import org.yxuanf.shortlink.project.service.RecycleBinService;
 
+import java.util.Date;
+
+import static org.yxuanf.shortlink.project.common.constant.RedisKeyConstant.GOTO_IS_NULL_SHORT_LINK_KEY;
 import static org.yxuanf.shortlink.project.common.constant.RedisKeyConstant.GOTO_SHORT_LINK_KEY;
 
 /**
@@ -61,11 +64,28 @@ public class RecycleBinServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLin
 
     @Override
     public void recoverRecycleBin(RecycleBinRecoverReqDTO requestParam) {
-
+        LambdaQueryWrapper<ShortLinkDO> lqw = Wrappers.lambdaQuery(ShortLinkDO.class).eq(ShortLinkDO::getGid, requestParam.getGid())
+                .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                .eq(ShortLinkDO::getEnableStatus, 1)
+                .eq(ShortLinkDO::getDelFlag, 0);
+        ShortLinkDO shortLinkDO = ShortLinkDO.builder().enableStatus(0).build();
+        baseMapper.update(shortLinkDO, lqw);
+        // 删除判空标志"-"
+        stringRedisTemplate.delete(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
     }
 
     @Override
     public void removeRecycleBin(RecycleBinRemoveReqDTO requestParam) {
-
+        LambdaUpdateWrapper<ShortLinkDO> updateWrapper = Wrappers.lambdaUpdate(ShortLinkDO.class)
+                .eq(ShortLinkDO::getFullShortUrl, requestParam.getFullShortUrl())
+                .eq(ShortLinkDO::getGid, requestParam.getGid())
+                .eq(ShortLinkDO::getEnableStatus, 1)
+                .eq(ShortLinkDO::getDelFlag, 0)
+                .isNull(ShortLinkDO::getDelTime);
+        ShortLinkDO delShortLinkDO = ShortLinkDO.builder()
+                .delTime(new Date())
+                .build();
+        delShortLinkDO.setDelFlag(1);
+        baseMapper.update(delShortLinkDO, updateWrapper);
     }
 }
