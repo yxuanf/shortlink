@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.yxuanf.shortlink.admin.common.convention.result.Result;
 import org.yxuanf.shortlink.admin.remote.ShortLinkRemoteService;
 import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkCreateReqDTO;
-import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkRecycleBinPageReqDTO;
+import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkPageReqDTO;
 import org.yxuanf.shortlink.admin.remote.dto.req.ShortLinkUpdateReqDTO;
 import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkCreateRespDTO;
 import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkPageRespDTO;
@@ -40,7 +40,7 @@ public class ShortLinkController {
      * 分页查询短链接
      */
     @GetMapping("/api/short-link/admin/v1/page")
-    public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkRecycleBinPageReqDTO requestParam) {
+    public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
         return shortLinkRemoteService.pageShortLink(requestParam);
     }
 }
