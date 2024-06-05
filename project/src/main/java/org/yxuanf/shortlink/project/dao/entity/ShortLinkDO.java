@@ -2,6 +2,7 @@ package org.yxuanf.shortlink.project.dao.entity;
 
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.*;
 import org.yxuanf.shortlink.project.common.database.BaseDO;
 
@@ -79,4 +80,10 @@ public class ShortLinkDO extends BaseDO {
      * 网站图标
      */
     private String favicon;
+
+    /**
+     * 删除时间
+     */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Date delTime;
 }
