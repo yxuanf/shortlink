@@ -112,7 +112,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
      */
     @Override
     public void update(UserUpdateReqDTO requestParam) {
-        // TODO 验证当前用户名是否为登录用户，不一致返回错误
+        //  验证当前用户名是否为登录用户，不一致返回错误
         if (!UserContext.getUsername().equals(requestParam.getUsername())) {
             throw new ClientException(USER_UPDATE_ERROR);
         }
@@ -123,6 +123,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     @Override
     public UserLoginRespDTO login(UserLoginReqDTO requestParam) {
+        Boolean hasLogin = stringRedisTemplate.hasKey(USER_LOGIN_KEY + requestParam.getUsername());
+        if (hasLogin != null && hasLogin) {
+            throw new ClientException("用户已经登录");
+        }
         LambdaQueryWrapper<UserDO> lqw = new LambdaQueryWrapper<>();
         UserDO userDO;
         if (hasUsername(requestParam.getUsername())) {
@@ -135,10 +139,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             }
         } else {
             throw new ClientException("用户不存在");
-        }
-        Boolean hasLogin = stringRedisTemplate.hasKey(USER_LOGIN_KEY + requestParam.getUsername());
-        if (hasLogin != null && hasLogin) {
-            throw new ClientException("用户已经登录");
         }
         // 生成uuid作为用户唯一标识
         String uuid = UUID.randomUUID().toString();
