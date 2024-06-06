@@ -80,7 +80,38 @@ public class ShortLinkDO extends BaseDO {
      * 网站图标
      */
     private String favicon;
+    /**
+     * 历史PV
+     */
+    private Integer totalPv;
 
+    /**
+     * 历史UV
+     */
+    private Integer totalUv;
+
+    /**
+     * 历史UIP
+     */
+    private Integer totalUip;
+
+    /**
+     * 今日PV
+     */
+    @TableField(exist = false)
+    private Integer todayPv;
+
+    /**
+     * 今日UV
+     */
+    @TableField(exist = false)
+    private Integer todayUv;
+
+    /**
+     * 今日UIP
+     */
+    @TableField(exist = false)
+    private Integer todayUip;
     /**
      * 删除时间
      */
