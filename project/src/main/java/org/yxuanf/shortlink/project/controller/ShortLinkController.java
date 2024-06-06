@@ -36,7 +36,7 @@ public class ShortLinkController {
     }
 
     /**
-     * 分页查询短链接
+     * 根据gid以及排序方式分页查询短链接
      */
     @GetMapping("/api/short-link/v1/page")
     public Result<IPage<ShortLinkPageRespDTO>> pageShortLink(ShortLinkPageReqDTO requestParam) {
