@@ -78,6 +78,8 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final LinkAccessLogsMapper linkAccessLogsMapper;
     private final LinkDeviceStatsMapper linkDeviceStatsMapper;
     private final LinkNetworkStatsMapper linkNetworkStatsMapper;
+    private final LinkStatsTodayMapper linkStatsTodayMapper;
+
     @Value("${shortLink.stats.locale.mapKey}")
     private String statsLocaleMapKey;
 
@@ -142,12 +144,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Override
     public IPage<ShortLinkPageRespDTO> pageShortLink(ShortLinkPageReqDTO requestParam) {
-        LambdaQueryWrapper<ShortLinkDO> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(ShortLinkDO::getGid, requestParam.getGid())
-                .eq(ShortLinkDO::getEnableStatus, 0)
-                .eq(ShortLinkDO::getDelFlag, 0)
-                .orderByDesc(ShortLinkDO::getUpdateTime);
-        IPage<ShortLinkDO> result = baseMapper.selectPage(requestParam, lqw);
+        IPage<ShortLinkDO> result = baseMapper.pageLink(requestParam);
         return result.convert(each -> {
             ShortLinkPageRespDTO bean = BeanUtil.toBean(each, ShortLinkPageRespDTO.class);
             bean.setDomain("http://" + bean.getDomain());
@@ -308,8 +305,9 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 // 设置cookie
                 ((HttpServletResponse) response).addCookie(uvCookie);
                 uvFirstFlag.set(Boolean.TRUE);
-                // 如何防止redis内存数据
+                // 向redis中存放
                 stringRedisTemplate.opsForSet().add(SHORT_LINK_STATS_UV_KEY + fullShortUrl, uvCookie.getValue());
+                // 设置cookies有效期为下一日零点到当前的时间差，保证确保用户的当日统计
                 stringRedisTemplate.expire(SHORT_LINK_STATS_UV_KEY + fullShortUrl, secondsUntilNextHour(), TimeUnit.SECONDS);
             };
             if (ArrayUtil.isNotEmpty(cookies)) {
@@ -326,6 +324,11 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             } else {
                 addResponseCookie.run();
             }
+            LambdaQueryWrapper<ShortLinkGotoDO> queryWrapper = Wrappers.lambdaQuery(ShortLinkGotoDO.class)
+                    .eq(ShortLinkGotoDO::getFullShortUrl, fullShortUrl);
+            ShortLinkGotoDO shortLinkGotoDO = shortLinkGotoMapper.selectOne(queryWrapper);
+            // 获取gid
+            String gid = shortLinkGotoDO.getGid();
             // 根据cookies获取uv与pv
             String remoteAddr = LinkUtil.getActualIp((HttpServletRequest) request);
             Long uipAdded = stringRedisTemplate.opsForSet().add(SHORT_LINK_STATS_UIP_KEY + fullShortUrl, remoteAddr);
@@ -333,10 +336,12 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             Date date = new Date();
             int hour = DateUtil.hour(date, true);
             int week = DateUtil.dayOfWeekEnum(date).getValue();
+            int uip = (uipAdded != null && uipAdded > 0L) ? 1 : 0;
+            int uvFirst = uvFirstFlag.get() ? 1 : 0;
             LinkAccessStatsDO linkAccessStatsDO = LinkAccessStatsDO.builder()
                     .pv(1)
-                    .uv(uvFirstFlag.get() ? 1 : 0)
-                    .uip((uipAdded != null && uipAdded > 0L) ? 1 : 0)
+                    .uv(uvFirst)
+                    .uip(uip)
                     .hour(hour)
                     .weekday(week)
                     .fullShortUrl(fullShortUrl)
@@ -382,16 +387,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .date(date)
                         .build();
                 linkBrowserStatsMapper.shortLinkBrowserState(linkBrowserStatsDO);
-                // 获取高频ip
-                LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
-                        // 保存用户标识
-                        .user(uv.get())
-                        .ip(remoteAddr)
-                        .os(os)
-                        .browser(browser)
-                        .fullShortUrl(fullShortUrl)
-                        .build();
-                linkAccessLogsMapper.insert(linkAccessLogsDO);
+
                 // 访问设备统计
                 String device = LinkUtil.getDevice((HttpServletRequest) request);
                 LinkDeviceStatsDO linkDeviceStatsDO = LinkDeviceStatsDO.builder()
@@ -402,13 +398,36 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                         .build();
                 linkDeviceStatsMapper.shortLinkDeviceState(linkDeviceStatsDO);
                 // 访问网络统计
+                String network = LinkUtil.getNetwork((HttpServletRequest) request);
                 LinkNetworkStatsDO linkNetworkStatsDO = LinkNetworkStatsDO.builder()
-                        .network(LinkUtil.getNetwork((HttpServletRequest) request))
+                        .network(network)
                         .cnt(1)
                         .fullShortUrl(fullShortUrl)
                         .date(date)
                         .build();
                 linkNetworkStatsMapper.shortLinkNetworkState(linkNetworkStatsDO);
+                //  保存用户标识
+                LinkAccessLogsDO linkAccessLogsDO = LinkAccessLogsDO.builder()
+                        .fullShortUrl(fullShortUrl)
+                        .user(uv.get())
+                        .ip(remoteAddr)
+                        .locale(StrUtil.join("-", "China", city, province))
+                        .browser(browser)
+                        .device(device)
+                        .os(os)
+                        .network(network)
+                        .build();
+                linkAccessLogsMapper.insert(linkAccessLogsDO);
+                baseMapper.incrementStats(gid, fullShortUrl, 1, uvFirst, uip);
+                LinkStatsTodayDO linkStatsTodayDO = LinkStatsTodayDO.builder()
+                        .gid(gid)
+                        .todayPv(1)
+                        .todayUv(uvFirst)
+                        .todayUip(uip)
+                        .fullShortUrl(fullShortUrl)
+                        .date(date)
+                        .build();
+                linkStatsTodayMapper.shortLinkTodayState(linkStatsTodayDO);
             }
         } catch (Throwable ex) {
             log.error("短链接统计异常", ex);
