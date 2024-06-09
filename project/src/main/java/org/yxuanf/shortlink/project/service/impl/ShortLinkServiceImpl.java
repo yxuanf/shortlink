@@ -3,6 +3,7 @@ package org.yxuanf.shortlink.project.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.lang.UUID;
+import cn.hutool.core.text.StrBuilder;
 import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.http.HttpUtil;
@@ -38,12 +39,11 @@ import org.yxuanf.shortlink.project.common.convention.exception.ServiceException
 import org.yxuanf.shortlink.project.common.enums.VailDateTypeEnum;
 import org.yxuanf.shortlink.project.dao.entity.*;
 import org.yxuanf.shortlink.project.dao.mapper.*;
+import org.yxuanf.shortlink.project.dto.req.ShortLinkBatchCreateReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkCreateReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkPageReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkUpdateReqDTO;
-import org.yxuanf.shortlink.project.dto.resp.ShortLinkCreateRespDTO;
-import org.yxuanf.shortlink.project.dto.resp.ShortLinkGroupCountRespDTO;
-import org.yxuanf.shortlink.project.dto.resp.ShortLinkPageRespDTO;
+import org.yxuanf.shortlink.project.dto.resp.*;
 import org.yxuanf.shortlink.project.service.ShortLinkService;
 import org.yxuanf.shortlink.project.toolkit.HashUtil;
 import org.yxuanf.shortlink.project.toolkit.LinkUtil;
@@ -82,15 +82,20 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
 
     @Value("${shortLink.stats.locale.mapKey}")
     private String statsLocaleMapKey;
+    @Value("${shortLink.domain.default}")
+    private String createShortLinkDefaultDomain;
 
     @Override
     public ShortLinkCreateRespDTO createShortLink(ShortLinkCreateReqDTO requestParam) {
         // 生成短链接后缀
         String shortLinkSuffix = generateSuffix(requestParam);
-        // 生成完成短链接
-        String fullShortUrl = requestParam.getDomain() + "/" + shortLinkSuffix;
+        // 设置指定域名
+        String fullShortUrl = StrBuilder.create(createShortLinkDefaultDomain)
+                .append("/")
+                .append(shortLinkSuffix)
+                .toString();
         ShortLinkDO shortLinkDO = ShortLinkDO.builder()
-                .domain(requestParam.getDomain())
+                .domain(createShortLinkDefaultDomain)
                 .originUrl(requestParam.getOriginUrl())
                 .gid(requestParam.getGid())
                 .createdType(requestParam.getCreatedType())
@@ -173,6 +178,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
                 .eq(ShortLinkDO::getGid, requestParam.getGid())
                 .eq(ShortLinkDO::getDelFlag, 0)
                 .eq(ShortLinkDO::getEnableStatus, 0);
+        // 数据库之前的数据
         ShortLinkDO hasShortLinkDO = baseMapper.selectOne(lqw);
         if (hasShortLinkDO == null) {
             throw new ClientException("短链接记录不存在");
@@ -209,15 +215,37 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
             baseMapper.delete(luw);
             baseMapper.insert(shortLinkDO);
         }
+        // 短链接保障缓存和数据库一致性(有效期)
+        if (!Objects.equals(hasShortLinkDO.getValidDateType(), requestParam.getValidDateType())
+                || !Objects.equals(hasShortLinkDO.getValidDate(), requestParam.getValidDate())
+                || !Objects.equals(hasShortLinkDO.getOriginUrl(), requestParam.getOriginUrl())) {
+            // 首先删除缓存
+            stringRedisTemplate.delete(String.format(GOTO_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
+            Date currentDate = new Date();
+            // 之前存在过期时间且已经过期
+            if (hasShortLinkDO.getValidDate() != null && hasShortLinkDO.getValidDate().before(currentDate)) {
+                // 设置为永久有效或有效
+                if (Objects.equals(requestParam.getValidDateType(), VailDateTypeEnum.PERMANENT.getType())
+                        || requestParam.getValidDate().after(currentDate)) {
+                    // 删除缓存中数据库不存在标志
+                    stringRedisTemplate.delete(String.format(GOTO_IS_NULL_SHORT_LINK_KEY, requestParam.getFullShortUrl()));
+                }
+            }
+        }
     }
 
     // 短链接重定向
     @Override
     @SneakyThrows
     public void restoreUrl(String shortUri, ServletRequest request, ServletResponse response) throws IOException {
-        // 返回主机名（nurl.ink）
         String serverName = request.getServerName();
-        String fullShortUrl = serverName + "/" + shortUri;
+        // 设置指定域名
+        String serverPort = Optional.of(request.getServerPort())
+                .filter(each -> !Objects.equals(each, 80))
+                .map(String::valueOf)
+                .map(each -> ":" + each)
+                .orElse("");
+        String fullShortUrl = serverName + serverPort + "/" + shortUri;
         // 首先尝试从缓存中获取原始链接
         String originalLink = stringRedisTemplate.opsForValue().get(String.format(GOTO_SHORT_LINK_KEY, fullShortUrl));
         // 不为空，直接返回
@@ -284,6 +312,33 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         } finally {
             lock.unlock();
         }
+    }
+
+    @Override
+    public ShortLinkBatchCreateRespDTO batchCreateShortLink(ShortLinkBatchCreateReqDTO requestParam) {
+        List<String> originUrls = requestParam.getOriginUrls();
+        List<String> describes = requestParam.getDescribes();
+        List<ShortLinkBaseInfoRespDTO> result = new ArrayList<>();
+        for (int i = 0; i < originUrls.size(); i++) {
+            ShortLinkCreateReqDTO shortLinkCreateReqDTO = BeanUtil.toBean(requestParam, ShortLinkCreateReqDTO.class);
+            shortLinkCreateReqDTO.setOriginUrl(originUrls.get(i));
+            shortLinkCreateReqDTO.setDescribe(describes.get(i));
+            try {
+                ShortLinkCreateRespDTO shortLink = createShortLink(shortLinkCreateReqDTO);
+                ShortLinkBaseInfoRespDTO linkBaseInfoRespDTO = ShortLinkBaseInfoRespDTO.builder()
+                        .fullShortUrl(shortLink.getFullShortUrl())
+                        .originUrl(shortLink.getOriginUrl())
+                        .describe(describes.get(i))
+                        .build();
+                result.add(linkBaseInfoRespDTO);
+            } catch (Throwable ex) {
+                log.error("批量创建短链接失败，原始参数：{}", originUrls.get(i));
+            }
+        }
+        return ShortLinkBatchCreateRespDTO.builder()
+                .total(result.size())
+                .baseLinkInfos(result)
+                .build();
     }
 
     /**
