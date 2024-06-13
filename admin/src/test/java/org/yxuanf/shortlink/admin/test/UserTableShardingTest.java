@@ -61,7 +61,9 @@ public class UserTableShardingTest {
             "    full_short_url varchar(128)                  null comment '完整短链接'\n" +
             ");";
     private static final String SQL_UPDATE_T_LINK = "alter table t_link_%d\n" +
-            "    modify del_time datetime null;";
+            "    drop key idx_unique_full_short_url,\n" +
+            "    add constraint idx_unique_full_short_url\n" +
+            "        unique (full_short_url, del_time);\n";
     private static final String SQL_UPDATE_T_LINK1 = "alter table t_link_%d\n" +
             "    add total_pv int default null comment '历史PV',\n" +
             "    add total_uv int default null comment '历史UV',\n" +
@@ -94,7 +96,7 @@ public class UserTableShardingTest {
 
     public static void main(String[] args) {
         for (int i = 0; i < 16; i++) {
-            System.out.printf((SQL_T_LINK_TODAY) + "%n", i);
+            System.out.printf((SQL_UPDATE_T_LINK) + "%n", i);
         }
     }
 }
