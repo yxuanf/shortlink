@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.yxuanf.shortlink.admin.common.convention.result.Result;
 import org.yxuanf.shortlink.admin.common.convention.result.Results;
+import org.yxuanf.shortlink.admin.dto.req.ShortLinkBatchCreateReqDTO;
+import org.yxuanf.shortlink.admin.dto.resp.ShortLinkBatchCreateRespDTO;
 import org.yxuanf.shortlink.admin.remote.dto.req.*;
 import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkCreateRespDTO;
 import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkGroupCountRespDTO;
@@ -132,6 +134,17 @@ public interface ShortLinkRemoteService {
         HttpUtil.post("http://127.0.0.1:8001/api/short-link/v1/recycle-bin/remove", JSON.toJSONString(requestParam));
     }
 
+    /**
+     * 批量创建短链接
+     *
+     * @param requestParam 批量创建短链接请求参数
+     * @return 短链接批量创建响应
+     */
 
+    default Result<ShortLinkBatchCreateRespDTO> batchCreateShortLink(@RequestBody ShortLinkBatchCreateReqDTO requestParam) {
+        String result = HttpUtil.post("http://127.0.0.1:8001/api/short-link/v1/create/batch", JSON.toJSONString(requestParam));
+        return JSON.parseObject(result, new TypeReference<Result<ShortLinkBatchCreateRespDTO>>() {
+        });
+    }
 }
 
