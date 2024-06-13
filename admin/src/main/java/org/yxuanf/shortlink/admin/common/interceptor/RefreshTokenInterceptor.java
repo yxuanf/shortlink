@@ -1,4 +1,4 @@
-package org.yxuanf.shortlink.admin.common.biz.user;
+package org.yxuanf.shortlink.admin.common.interceptor;
 
 import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.yxuanf.shortlink.admin.common.biz.user.UserContext;
+import org.yxuanf.shortlink.admin.common.biz.user.UserInfoDTO;
 
 import java.util.concurrent.TimeUnit;
 
