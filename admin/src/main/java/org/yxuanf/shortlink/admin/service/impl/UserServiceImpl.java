@@ -1,6 +1,7 @@
 package org.yxuanf.shortlink.admin.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.lang.UUID;
 import com.alibaba.fastjson.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -27,6 +28,7 @@ import org.yxuanf.shortlink.admin.dto.resp.UserLoginRespDTO;
 import org.yxuanf.shortlink.admin.dto.resp.UserRespDTO;
 import org.yxuanf.shortlink.admin.service.UserService;
 
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static org.yxuanf.shortlink.admin.common.constant.RedisCacheConstant.LOCK_USER_REGISTER_KEY;
@@ -81,30 +83,25 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
         }
         // 通过分布式锁，防止短时间内同一用户名恶意请求注册
         RLock lock = redissonClient.getLock(LOCK_USER_REGISTER_KEY + requestParam.getUsername());
-        try {
-            if (lock.tryLock()) {
-                try {
-                    int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
-                    // inserted < 1 新增用户失败
-                    if (inserted < 1) {
-                        throw new ClientException(USER_SAVE_ERROR);
-                    }
-                    //
-                } catch (DuplicateKeyException ex) {
-                    throw new ClientException(USER_EXIST);
-                }
-                // 将用户名字添加到布隆过滤器中
-                userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
-                // 用户在注册时创建一个默认分组
-                groupService.saveGroup(requestParam.getUsername(), "默认分组");
-                return;
-            }
-            // 未获得锁直接抛出异常
+        if (!lock.tryLock()) {
             throw new ClientException(USER_NAME_EXIST);
+        }
+        try {
+            int inserted = baseMapper.insert(BeanUtil.toBean(requestParam, UserDO.class));
+            // inserted < 1 新增用户失败
+            if (inserted < 1) {
+                throw new ClientException(USER_SAVE_ERROR);
+            }
+            // 将用户名字添加到布隆过滤器中
+            userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
+            // 用户在注册时创建一个默认分组
+            groupService.saveGroup(requestParam.getUsername(), "默认分组");
+            return;
+        } catch (DuplicateKeyException ex) {
+            throw new ClientException(USER_EXIST);
         } finally {
             lock.unlock();
         }
-
     }
 
     /**
@@ -123,19 +120,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
 
     @Override
     public UserLoginRespDTO login(UserLoginReqDTO requestParam) {
-        Boolean hasLogin = stringRedisTemplate.hasKey(USER_LOGIN_KEY + requestParam.getUsername());
-        if (hasLogin != null && hasLogin) {
-            throw new ClientException("用户已经登录");
+        Map<Object, Object> hasLoginMap = stringRedisTemplate.opsForHash().entries(USER_LOGIN_KEY + requestParam.getUsername());
+        // 如果用户信息存在，直接返回token
+        if (CollUtil.isNotEmpty(hasLoginMap)) {
+            stringRedisTemplate.expire(USER_LOGIN_KEY + requestParam.getUsername(), 30L, TimeUnit.MINUTES);
+            String token = hasLoginMap.keySet().stream()
+                    .findFirst()
+                    .map(Object::toString)
+                    .orElseThrow(() -> new ClientException("用户登录错误"));
+            return new UserLoginRespDTO(token);
         }
         LambdaQueryWrapper<UserDO> lqw = new LambdaQueryWrapper<>();
         UserDO userDO;
         if (hasUsername(requestParam.getUsername())) {
-            lqw.eq(UserDO::getUsername, requestParam.getUsername())
-                    .eq(UserDO::getPassword, requestParam.getPassword())
-                    .eq(UserDO::getDelFlag, 0);
-            userDO = baseMapper.selectOne(lqw);
-            if (userDO == null) {
-                throw new ClientException("用户密码错误");
+            lqw.eq(UserDO::getUsername, requestParam.getUsername());
+            UserDO hasUser = baseMapper.selectOne(lqw);
+            if (hasUser == null) {
+                throw new ClientException("用户不存在");
+            } else {
+                lqw.eq(UserDO::getPassword, requestParam.getPassword()).eq(UserDO::getDelFlag, 0);
+                userDO = baseMapper.selectOne(lqw);
+                if (userDO == null) {
+                    throw new ClientException("密码错误!请输入正确的密码");
+                }
             }
         } else {
             throw new ClientException("用户不存在");
