@@ -1,5 +1,6 @@
 package org.yxuanf.shortlink.project.controller;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
@@ -7,12 +8,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.yxuanf.shortlink.project.common.convention.result.Result;
 import org.yxuanf.shortlink.project.common.convention.result.Results;
+import org.yxuanf.shortlink.project.dto.req.ShortLinkBatchCreateReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkCreateReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkPageReqDTO;
 import org.yxuanf.shortlink.project.dto.req.ShortLinkUpdateReqDTO;
+import org.yxuanf.shortlink.project.dto.resp.ShortLinkBatchCreateRespDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkCreateRespDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkGroupCountRespDTO;
 import org.yxuanf.shortlink.project.dto.resp.ShortLinkPageRespDTO;
+import org.yxuanf.shortlink.project.handler.CustomBlockHandler;
 import org.yxuanf.shortlink.project.service.ShortLinkService;
 
 import java.io.IOException;
@@ -28,9 +32,12 @@ public class ShortLinkController {
     private final ShortLinkService shortLinkService;
 
     /**
-     * 批量创建短链接
+     * 创建短链接
      */
     @PostMapping("/api/short-link/v1/create")
+    @SentinelResource(value = "create_short-link",
+            blockHandler = "createShortLinkBlockHandlerMethod",
+            blockHandlerClass = CustomBlockHandler.class)
     public Result<ShortLinkCreateRespDTO> createShortLink(@RequestBody ShortLinkCreateReqDTO requestParam) {
         return Results.success(shortLinkService.createShortLink(requestParam));
     }
@@ -66,6 +73,14 @@ public class ShortLinkController {
     @GetMapping("/{short-uri}")
     public void restoreUrl(@PathVariable("short-uri") String shortUri, ServletRequest request, ServletResponse response) throws IOException {
         shortLinkService.restoreUrl(shortUri, request, response);
+    }
+
+    /**
+     * 批量创建短链接
+     */
+    @PostMapping("/api/short-link/v1/create/batch")
+    public Result<ShortLinkBatchCreateRespDTO> batchCreateShortLink(@RequestBody ShortLinkBatchCreateReqDTO requestParam) {
+        return Results.success(shortLinkService.batchCreateShortLink(requestParam));
     }
 
     /**
