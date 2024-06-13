@@ -121,11 +121,13 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
 
     @Override
     public List<ShortLinkGroupRespDTO> listGroup() {
-        LambdaQueryWrapper<GroupDO> lqw = new LambdaQueryWrapper<>();
-        lqw.eq(GroupDO::getDelFlag, 0).eq(GroupDO::getUsername, UserContext.getUsername())
+        // 查询用户的分组信息
+        LambdaQueryWrapper<GroupDO> lqw = Wrappers.lambdaQuery(GroupDO.class)
+                .eq(GroupDO::getDelFlag, 0)
+                .eq(GroupDO::getUsername, UserContext.getUsername())
                 .orderByDesc(List.of(GroupDO::getSortOrder, GroupDO::getUpdateTime));
         List<GroupDO> groupDOList = baseMapper.selectList(lqw);
-        //   获取所有分组gid的数量
+        //   计算所有分组gid的数量
         List<ShortLinkGroupCountRespDTO> gids = shortLinkRemoteService.listGroupShortLinkCount(
                 groupDOList.stream().map(GroupDO::getGid).toList()).getData();
         // 不包含短链接数量的查询结果
@@ -133,6 +135,11 @@ public class GroupServiceImpl extends ServiceImpl<GroupMapper, GroupDO> implemen
         // 转换为map(gid:count)
         Map<String, Integer> countMap = gids.stream().collect(
                 Collectors.toMap(ShortLinkGroupCountRespDTO::getGid, ShortLinkGroupCountRespDTO::getShortLinkCount));
+//        shortLinkGroupRespDTOList.forEach(each -> {
+//                    Optional<ShortLinkGroupCountRespDTO> first = gids.stream().filter(item -> Objects.equals(item.getGid(), each.getGid())).findFirst();
+//                    first.ifPresent(s -> each.setShortLinkCount(first.get().getShortLinkCount()));
+//                }
+//        );
         // 添加短链接各个分组的数量
         return shortLinkGroupRespDTOList.stream()
                 .peek(item -> item.setShortLinkCount(countMap.getOrDefault(item.getGid(), 0))).toList();
