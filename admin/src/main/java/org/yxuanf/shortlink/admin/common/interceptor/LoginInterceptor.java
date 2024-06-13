@@ -1,9 +1,10 @@
-package org.yxuanf.shortlink.admin.common.biz.user;
+package org.yxuanf.shortlink.admin.common.interceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.yxuanf.shortlink.admin.common.biz.user.UserContext;
 
 /**
  * 登录拦截器第二级
