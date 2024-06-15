@@ -37,6 +37,7 @@ import org.yxuanf.shortlink.project.common.convention.exception.ServiceException
 import org.yxuanf.shortlink.project.common.enums.VailDateTypeEnum;
 import org.yxuanf.shortlink.project.dao.entity.ShortLinkDO;
 import org.yxuanf.shortlink.project.dao.entity.ShortLinkGotoDO;
+import org.yxuanf.shortlink.project.dao.mapper.LinkStatsTodayMapper;
 import org.yxuanf.shortlink.project.dao.mapper.ShortLinkGotoMapper;
 import org.yxuanf.shortlink.project.dao.mapper.ShortLinkMapper;
 import org.yxuanf.shortlink.project.dto.biz.ShortLinkStatsRecordDTO;
@@ -71,6 +72,7 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
     private final RBloomFilter<String> shortUriCreateCachePenetrationBloomFilter;
     private final ShortLinkMapper shortLinkMapper;
     private final ShortLinkGotoMapper shortLinkGotoMapper;
+    private final LinkStatsTodayMapper linkStatsTodayMapper;
     private final StringRedisTemplate stringRedisTemplate;
     private final RedissonClient redissonClient;
     private final ShortLinkStatsSaveProducer shortLinkStatsSaveProducer;
@@ -375,8 +377,8 @@ public class ShortLinkServiceImpl extends ServiceImpl<ShortLinkMapper, ShortLink
         Map<String, String> producerMap = new HashMap<>();
         producerMap.put("statsRecord", JSON.toJSONString(statsRecord));
         // 消息队列为什么选用RocketMQ？详情查看：https://nageoffer.com/shortlink/question
-//        shortLinkStatsSaveProducerRocketMQ.send(producerMap);
-        shortLinkStatsSaveProducer.send(producerMap);
+        shortLinkStatsSaveProducerRocketMQ.send(producerMap);
+//        shortLinkStatsSaveProducer.send(producerMap);
     }
 
     private ShortLinkStatsRecordDTO buildLinkStatsRecordAndSetUser(String fullShortUrl, ServletRequest request, ServletResponse response) {

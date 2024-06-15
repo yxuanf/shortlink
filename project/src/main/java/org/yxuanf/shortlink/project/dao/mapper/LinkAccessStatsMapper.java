@@ -36,7 +36,7 @@ public interface LinkAccessStatsMapper extends BaseMapper<LinkAccessStatsDO> {
             "    tlas.full_short_url = #{param.fullShortUrl} " +
             "    AND tl.gid = #{param.gid} " +
             "    AND tl.del_flag = '0' " +
-            "    AND tl.enable_status = #{param.enableStatus} " +
+            "    AND tl.enable_status = '0' " +
             "    AND tlas.date BETWEEN #{param.startDate} and #{param.endDate} " +
             "GROUP BY " +
             "    tlas.date;")
@@ -75,7 +75,7 @@ public interface LinkAccessStatsMapper extends BaseMapper<LinkAccessStatsDO> {
             "    tlas.full_short_url = #{param.fullShortUrl} " +
             "    AND tl.gid = #{param.gid} " +
             "    AND tl.del_flag = '0' " +
-            "    AND tl.enable_status = #{param.enableStatus} " +
+            "    AND tl.enable_status = '0' " +
             "    AND tlas.date BETWEEN #{param.startDate} and #{param.endDate} " +
             "GROUP BY " +
             "    tlas.full_short_url, tl.gid, tlas.hour;")
@@ -94,7 +94,7 @@ public interface LinkAccessStatsMapper extends BaseMapper<LinkAccessStatsDO> {
             "    tlas.full_short_url = #{param.fullShortUrl} " +
             "    AND tl.gid = #{param.gid} " +
             "    AND tl.del_flag = '0' " +
-            "    AND tl.enable_status = #{param.enableStatus} " +
+            "    AND tl.enable_status = '0' " +
             "    AND tlas.date BETWEEN #{param.startDate} and #{param.endDate} " +
             "GROUP BY " +
             "    tlas.full_short_url, tl.gid, tlas.weekday;")

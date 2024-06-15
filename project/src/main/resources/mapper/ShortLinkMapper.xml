@@ -29,18 +29,16 @@
 
     <select id="pageLink" parameterType="org.yxuanf.shortlink.project.dto.req.ShortLinkPageReqDTO"
             resultType="org.yxuanf.shortlink.project.dao.entity.ShortLinkDO">
-        # 绑定表 https://shardingsphere.apache.org/document/current/cn/features/sharding/concept/
         SELECT t.*,
         COALESCE(s.today_pv, 0) AS todayPv,
         COALESCE(s.today_uv, 0) AS todayUv,
         COALESCE(s.today_uip, 0) AS todayUip
         FROM t_link t
-        LEFT JOIN t_link_stats_today s ON t.gid = s.gid
+        LEFT JOIN t_link_stats_today s ON t.full_short_url = s.full_short_url
+        AND s.date = CURDATE()
         WHERE t.gid = #{gid}
-        AND t.full_short_url = s.full_short_url
         AND t.enable_status = 0
         AND t.del_flag = 0
-        AND s.date = CURDATE()
         <choose>
             <when test="orderTag == 'todayPv'">
                 ORDER BY todayPv DESC

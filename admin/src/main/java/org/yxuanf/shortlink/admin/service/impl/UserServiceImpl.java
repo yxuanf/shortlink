@@ -96,7 +96,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, UserDO> implements 
             userRegisterCachePenetrationBloomFilter.add(requestParam.getUsername());
             // 用户在注册时创建一个默认分组
             groupService.saveGroup(requestParam.getUsername(), "默认分组");
-            return;
         } catch (DuplicateKeyException ex) {
             throw new ClientException(USER_EXIST);
         } finally {
