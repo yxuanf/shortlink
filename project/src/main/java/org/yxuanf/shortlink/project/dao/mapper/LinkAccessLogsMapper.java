@@ -77,7 +77,7 @@ public interface LinkAccessLogsMapper extends BaseMapper<LinkAccessLogsDO> {
             "    tlal.full_short_url = #{param.fullShortUrl} " +
             "    AND tl.gid = #{param.gid} " +
             "    AND tl.del_flag = '0' " +
-            "    AND tl.enable_status = #{param.enableStatus} " +
+            "    AND tl.enable_status = '0' " +
             "    AND tlal.create_time BETWEEN CONCAT(#{param.startDate},' 00:00:00') and CONCAT(#{param.endDate},' 23:59:59')" +
             "GROUP BY " +
             "    tlal.full_short_url, tl.gid;")
@@ -119,7 +119,7 @@ public interface LinkAccessLogsMapper extends BaseMapper<LinkAccessLogsDO> {
             "    WHERE " +
             "        tlal.full_short_url = #{param.fullShortUrl} " +
             "        AND tl.gid = #{param.gid} " +
-            "        AND tl.enable_status = #{param.enableStatus} " +
+            "        AND tl.enable_status = '0' " +
             "        AND tl.del_flag = '0' " +
             "    GROUP BY " +
             "        tlal.user " +

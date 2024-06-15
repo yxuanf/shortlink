@@ -34,7 +34,7 @@
         tlal.full_short_url = #{fullShortUrl}
         AND tl.gid = #{gid}
         AND tl.del_flag = '0'
-        AND tl.enable_status = #{enableStatus}
+        AND tl.enable_status = '0'
         AND tlal.user IN
         <foreach item="item" index="index" collection="userAccessLogsList" open="(" separator="," close=")">
             #{item}
