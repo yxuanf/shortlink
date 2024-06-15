@@ -4,6 +4,7 @@ import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.yxuanf.shortlink.admin.common.convention.result.Result;
@@ -11,9 +12,7 @@ import org.yxuanf.shortlink.admin.common.convention.result.Results;
 import org.yxuanf.shortlink.admin.dto.req.ShortLinkBatchCreateReqDTO;
 import org.yxuanf.shortlink.admin.dto.resp.ShortLinkBatchCreateRespDTO;
 import org.yxuanf.shortlink.admin.remote.dto.req.*;
-import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkCreateRespDTO;
-import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkGroupCountRespDTO;
-import org.yxuanf.shortlink.admin.remote.dto.resp.ShortLinkPageRespDTO;
+import org.yxuanf.shortlink.admin.remote.dto.resp.*;
 
 import java.util.HashMap;
 import java.util.List;
@@ -144,6 +143,113 @@ public interface ShortLinkRemoteService {
     default Result<ShortLinkBatchCreateRespDTO> batchCreateShortLink(@RequestBody ShortLinkBatchCreateReqDTO requestParam) {
         String result = HttpUtil.post("http://127.0.0.1:8001/api/short-link/v1/create/batch", JSON.toJSONString(requestParam));
         return JSON.parseObject(result, new TypeReference<Result<ShortLinkBatchCreateRespDTO>>() {
+        });
+    }
+
+    /**
+     * 访问单个短链接指定时间内监控数据
+     *
+     * @param fullShortUrl 完整短链接
+     * @param gid          分组标识
+     * @param startDate    开始时间
+     * @param endDate      结束时间
+     * @return 短链接监控信息
+     */
+    default Result<ShortLinkStatsRespDTO> oneShortLinkStats(@RequestParam("fullShortUrl") String fullShortUrl,
+                                                            @RequestParam("gid") String gid,
+                                                            @RequestParam("enableStatus") Integer enableStatus,
+                                                            @RequestParam("startDate") String startDate,
+                                                            @RequestParam("endDate") String endDate) {
+        HashMap<String, Object> requestMap = new HashMap<>();
+        requestMap.put("fullShortUrl", fullShortUrl);
+        requestMap.put("gid", gid);
+        requestMap.put("enableStatus", enableStatus);
+        requestMap.put("startDate", startDate);
+        requestMap.put("endDate", endDate);
+        // 发送http请求
+        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/stats", requestMap);
+        return JSON.parseObject(resultPageStr, new TypeReference<>() {
+        });
+    }
+
+    /**
+     * 访问分组短链接指定时间内监控数据
+     *
+     * @param gid       分组标识
+     * @param startDate 开始时间
+     * @param endDate   结束时间
+     * @return 分组短链接监控信息
+     */
+    default Result<ShortLinkStatsRespDTO> groupShortLinkStats(@RequestParam("gid") String gid,
+                                                              @RequestParam("startDate") String startDate,
+                                                              @RequestParam("endDate") String endDate) {
+        HashMap<String, Object> requestMap = new HashMap<>();
+        requestMap.put("gid", gid);
+        requestMap.put("startDate", startDate);
+        requestMap.put("endDate", endDate);
+        // 发送http请求
+        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/stats/group", requestMap);
+        return JSON.parseObject(resultPageStr, new TypeReference<>() {
+        });
+    }
+
+    /**
+     * 访问单个短链接指定时间内监控访问记录数据
+     *
+     * @param fullShortUrl 完整短链接
+     * @param gid          分组标识
+     * @param startDate    开始时间
+     * @param endDate      结束时间
+     * @param current      当前页
+     * @param size         一页数据量
+     * @return 短链接监控访问记录信息
+     */
+    default Result<Page<ShortLinkStatsAccessRecordRespDTO>> shortLinkStatsAccessRecord(@RequestParam("fullShortUrl") String fullShortUrl,
+                                                                                       @RequestParam("gid") String gid,
+                                                                                       @RequestParam("startDate") String startDate,
+                                                                                       @RequestParam("endDate") String endDate,
+                                                                                       @RequestParam("enableStatus") Integer enableStatus,
+                                                                                       @RequestParam("current") Long current,
+                                                                                       @RequestParam("size") Long size) {
+
+        HashMap<String, Object> requestMap = new HashMap<>();
+        requestMap.put("fullShortUrl", fullShortUrl);
+        requestMap.put("gid", gid);
+        requestMap.put("enableStatus", enableStatus);
+        requestMap.put("startDate", startDate);
+        requestMap.put("endDate", endDate);
+        requestMap.put("current", current);
+        requestMap.put("size", size);
+        // 发送http请求
+        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/stats/access-record", requestMap);
+        return JSON.parseObject(resultPageStr, new TypeReference<>() {
+        });
+    }
+
+    /**
+     * 访问分组短链接指定时间内监控访问记录数据
+     *
+     * @param gid       分组标识
+     * @param startDate 开始时间
+     * @param endDate   结束时间
+     * @param current   当前页
+     * @param size      一页数据量
+     * @return 分组短链接监控访问记录信息
+     */
+    default Result<Page<ShortLinkStatsAccessRecordRespDTO>> groupShortLinkStatsAccessRecord(@RequestParam("gid") String gid,
+                                                                                            @RequestParam("startDate") String startDate,
+                                                                                            @RequestParam("endDate") String endDate,
+                                                                                            @RequestParam("current") Long current,
+                                                                                            @RequestParam("size") Long size) {
+        HashMap<String, Object> requestMap = new HashMap<>();
+        requestMap.put("gid", gid);
+        requestMap.put("startDate", startDate);
+        requestMap.put("endDate", endDate);
+        requestMap.put("current", current);
+        requestMap.put("size", size);
+        // 发送http请求
+        String resultPageStr = HttpUtil.get("http://127.0.0.1:8001/api/short-link/v1/stats/access-record/group", requestMap);
+        return JSON.parseObject(resultPageStr, new TypeReference<>() {
         });
     }
 }
